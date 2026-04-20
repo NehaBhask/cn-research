@@ -1,0 +1,275 @@
+/* FILE: formatdefs.css */
+
+/* ---------------------------------------------------------------------- */
+/*    General stuff                                                       */
+/* ---------------------------------------------------------------------- */
+
+.body { 
+   background-color: #f7f7f7; 
+   margin : 3.5em 3em 3.5em 3em; /* top right bottom left */
+   padding: 0em;                 /* on all sides */
+   font-family: Arial, sans-serif;
+} 
+
+/** fonts */
+h1,h2,h3,h4,p,ul,ol,li,div,td,th,address,blockquote,nobr,b,i {
+  font-family:  Arial, sans-serif; 
+}
+
+/** different sizes for h-hierachy */
+h1  { font-size:26px; margin-bottom:18px; }
+h2  { font-size:21px; margin-bottom:18px; }
+pre { font-family:Courier New,Courier; font-size:13px; color:#0000C0; }
+
+p.data_first_level { 
+  font-family:  Arial, Helvetica, sans-serif; 
+  font-size:    18px 
+}
+
+span.hint {
+    font-style:italic;
+    font-size:    12px;
+}
+
+span.bigHint {
+    font-style:italic;
+    font-size:    15px;
+}
+
+div.formElement {
+    font-family:  Arial,sans-serif; 
+    font-size:    14px;
+    margin-bottom: 5px;
+}
+
+br              { margin-bottom:1mm }
+br.bigskip      { margin-bottom:3mm }
+img.klammeraffe { border-style: none; }
+
+/* ---------------------------------------------------------------------- */
+/*    Actions                                                             */
+/* ---------------------------------------------------------------------- */
+
+.errorLabel          { color: red; }
+.errorMessage { 
+   font-style: italic; 
+   font-size:  13px; 
+   text-align: center; 
+   color:      red; 
+}
+
+.actionMessage       { color: green; }       
+.actionError         { color: red; }
+.checkboxErrorLabel  { color: red; }
+.required            { font-weight: bold; }
+
+/* ---------------------------------------------------------------------- */
+/*    Enumerations                                                        */
+/* ---------------------------------------------------------------------- */
+
+/* We need to set also padding-left for ul, for Internet Explorer. */
+ul  { margin:  3mm 0mm 3mm 1.25em; padding-left: 1.25em } /* top right bottom left */
+/*ul  { margin:  3mm 0mm 3mm 0mm; } */ /* top right bottom left */
+li  { margin:  2mm 0mm 2mm 0mm; } /* top right bottom left */
+dl  { margin:  5mm 0mm 0mm 4mm; } /* top right bottom left */
+dd  { margin:  2mm 0mm 5mm 3mm; } /* top right bottom left */
+dt  { margin:  2mm 0mm 2mm 0mm; } /* top right bottom left */
+pre { margin:  2mm 0mm 3mm 3mm; } /* top right bottom left */
+
+/* ---------------------------------------------------------------------- */
+/*    Links                                                               */
+/* ---------------------------------------------------------------------- */
+
+/* Links in general */
+a {
+   font-family:      Arial, Helvetica, sans-serif;
+   font-size:        14px;
+   color:            #333333;
+   text-decoration:  underline;
+   font-style:       normal;
+   line-height:      16px;
+}
+
+/* Links already visited */
+/*a:visited { color:     #111111; }*/
+
+/* Links which focus on them */
+a:focus { color:     #CC3300; }
+
+/* ---------------------------------------------------------------------- */
+/*    table default                                                       */
+/* ---------------------------------------------------------------------- */
+
+/* default table fields */
+td {
+  font-family:      Arial, Helvetica, sans-serif; bold;
+  font-size:        14px; 
+}
+
+/* default table fields marked as such :-) */
+
+table.default {
+  width: 100%
+}
+
+table.default td { 
+  vertical-align:      top;
+  padding-left:        1em; 
+  padding-right:       1em; 
+  border-style:        none;
+  text-align:          center;
+}
+
+/* default table headers */
+table.default tr.table_header {
+  background-color:    #FF6600 /*8080FF*/;
+  font-weight:         bold; 
+}
+
+/* odd and even rows */
+table tr.odd { background-color:   #E0E0E0 }
+table tr.even  { background-color:   #EFEFEF }
+
+/* odd and even columns */
+table td.odd { background-color:   #E0E0E0 }
+table td.even  { background-color:   #EFEFEF }
+
+thead.table_header {
+  background-color:    #FF6600 /*8080FF*/;
+  font-weight:         bold; 
+}
+
+
+/* ------------------------------------------------------------------- */
+/*    common definitions for all statistics tables                     */
+/* ------------------------------------------------------------------- */
+
+/* cover the whole page width */
+table.statistics  { width: 100%; }
+
+/* default table entry: left-aligned, 35% of the row width */
+table.statistics td 
+{ 
+   text-align:          left; 
+   width:               35%;
+}
+
+/* values: beige background, 65% of the row width */
+table.statistics  td.value 
+{ 
+   background-color:    #FFFFCC;
+   width:               65%;
+   padding-left:        1em;
+}
+
+/* ------------------------------------------------------------------- */
+/*    problem details table                                            */
+/* ------------------------------------------------------------------- */
+
+/* some table headers dark orange */
+table.problem_details td.prob_th_name, 
+table.problem_details td.prob_th_model, 
+table.problem_details td.prob_th_orig, 
+table.problem_details td.prob_th_contributor, 
+table.problem_details td.prob_th_submitdate, 
+table.problem_details td.prob_th_lp, 
+table.problem_details td.prob_th_submit_sol
+{ 
+   background-color:    #FF9900/*#8080FF*/;
+}
+
+/* other headers light orange */
+table.problem_details td.prob_th_nodes, 
+table.problem_details td.prob_th_links,
+table.problem_details td.prob_th_demands
+
+{
+   background-color:    #FFCC00 /* #FF7070*/ ;
+}
+
+table.problem_details td.prob_th_statistics, 
+table.problem_details td.prob_th_image
+{
+   background-color:    #FFDD00/*#80FF80*/;
+}
+
+/* ---------------------------------------------------------------------- */
+/*    problem statistics table                                            */
+/* ---------------------------------------------------------------------- */
+
+table.problem_statistics          { width: auto; }
+table.problem_statistics td       { width: 20em; }
+table.problem_statistics td.value { width: 10em; }
+
+/* some headers dark green */
+table.problem_statistics td.th_graph,
+table.problem_statistics td.th_link,
+table.problem_statistics td.th_link_cap,
+table.problem_statistics td.th_path,
+table.problem_statistics td.th_spath
+{
+   background-color:   #FF9900 /* #DDFF88 #FF7070 */;
+}
+
+/* other headers light green */
+table.problem_statistics td.th_node,
+table.problem_statistics td.th_node_in,
+table.problem_statistics td.th_node_out,
+table.problem_statistics td.th_demand
+{
+   background-color:   #FFDD00 /* #99FF00 */;
+}
+
+/* ---------------------------------------------------------------------- */
+/*    tables solution statistics                                          */
+/* ---------------------------------------------------------------------- */
+
+table.all_solutions_statistics          { width: auto; }
+table.all_solutions_statistics td       { width: 25em; }
+table.all_solutions_statistics td.value { width: 10em; }
+
+/* different colors for odd and even columns */
+table.all_solutions_statistics td.sstat_col_odd  { background-color: #FFFFCC; }
+table.all_solutions_statistics td.sstat_col_even { background-color: #FFFFBC; }
+
+/* ---------------------------------------------------------------------- */
+/*    single solution statistics                                          */
+/* ---------------------------------------------------------------------- */
+
+/* name: dark orange */
+table.single_solution_statistics td.sols_th_name,
+table.single_solution_statistics td.sols_th_contributor,
+table.single_solution_statistics td.sols_th_submitdate,
+table.single_solution_statistics td.sols_th_annotations,
+table.all_solutions_statistics td.sstat_th_total_cost, 
+table.all_solutions_statistics td.sstat_th_node,
+table.all_solutions_statistics td.sstat_th_node_out,
+table.all_solutions_statistics td.sstat_th_path
+{ 
+   background-color:    #FF9900/*#8080FF*/;
+}
+
+table.all_solutions_statistics td.sstat_th_part_cost,
+table.single_solution_statistics td.sols_th_links, 
+table.single_solution_statistics td.sols_th_cap, 
+table.single_solution_statistics td.sols_th_load,
+table.single_solution_statistics td.sols_th_avg_path_length,
+table.single_solution_statistics td.sols_th_total_num_paths, 
+table.single_solution_statistics td.sols_th_avg_num_paths,
+table.single_solution_statistics td.sols_th_total_cost, 
+table.single_solution_statistics td.sols_th_degree
+{ 
+   background-color:    #FFCC00/*#8080FF*/;
+}
+
+
+/* dimensioning: light orange */
+
+table.single_solution_statistics td.sols_th_statistics,
+table.single_solution_statistics td.sols_th_image,
+table.all_solutions_statistics td.sstat_th_node_in,
+table.all_solutions_statistics td.sstat_th_links,
+table.all_solutions_statistics td.sstat_th_path_dem
+{ 
+   background-color:    #FFDD00/*#80FF80*/;
+}
