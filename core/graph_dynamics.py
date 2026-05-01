@@ -51,19 +51,17 @@ class GraphDynamicsHandler:
     """
 
     def __init__(self,
-                 drift_threshold:   float = 0.10,
-                 epsilon:           float = 1.0):
+                 epsilon: float = 1.0):
         """
         Args:
-            drift_threshold: Cosine drift above this triggers re-clustering.
-                             0.10 = 10% change in fingerprint.
-                             Low value → re-cluster more often (sensitive)
-                             High value → re-cluster less often (stable)
-            epsilon:         DP privacy budget for fingerprint sharing.
-                             Lower = stronger privacy, more noise.
+            epsilon: DP privacy budget for fingerprint sharing.
+                     Lower = stronger privacy, more noise.
+
+        Note: drift threshold is now computed adaptively per event
+        using τ(n, m) = 1.5/√n × 1/(1+ln m), so no fixed threshold
+        is stored here.
         """
-        self.drift_threshold = drift_threshold
-        self.epsilon         = epsilon
+        self.epsilon = epsilon
         self.events: list[DynamicsEvent] = []
 
     # ──────────────────────────────────────────────────────────────────
@@ -151,8 +149,11 @@ class GraphDynamicsHandler:
         fp_old  = compute_fingerprint(G_old, k=k)
         fp_new  = compute_fingerprint(G_new, k=k)
 
-        # Measure structural drift
-        drift   = fingerprint_drift(fp_old, fp_new)
+        # Measure structural drift using adaptive threshold τ(n, m=1)
+        # n_nodes = size of graph BEFORE the event (the reference graph)
+        drift   = fingerprint_drift(fp_old, fp_new,
+                                    n_nodes=G_old.number_of_nodes(),
+                                    m_users=1)
 
         # Only send updated fingerprint to server if drift is significant
         should_recluster = drift["should_recluster"]
