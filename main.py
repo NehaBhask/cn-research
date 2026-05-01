@@ -75,7 +75,7 @@ def experiment_clustering_quality(clients, k=20):
 
 
 # ── Experiment 2: Privacy vs clustering accuracy tradeoff ─────────────────────
-def experiment_privacy_tradeoff(clients, k=20):
+def experiment_privacy_tradeoff(clients, k=20, prefix="synthetic"):
     print("\n" + "=" * 60)
     print("EXPERIMENT 2: Privacy (epsilon) vs clustering quality")
     print("=" * 60)
@@ -134,20 +134,20 @@ def experiment_privacy_tradeoff(clients, k=20):
     ax2.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig("results/privacy_tradeoff.png", dpi=150)
-    print(f"\n  Plot saved to results/privacy_tradeoff.png")
+    plt.savefig(f"results/privacy_tradeoff_{prefix}.png", dpi=150)
+    print(f"\n  Plot saved to results/privacy_tradeoff_{prefix}.png")
     return results
 
 
 # ── Experiment 3: Dynamic user join/leave ─────────────────────────────────────
-def experiment_user_dynamics(clients, k=20):
+def experiment_user_dynamics(clients, k=20, prefix="synthetic"):
     print("\n" + "=" * 60)
     print("EXPERIMENT 3: Dynamic user join/leave inside ISP networks")
     print("=" * 60)
 
     # Part A: single user sessions (expected: low drift, no re-cluster)
     print("\n  Part A: Single user join/leave sessions")
-    print("  (expected drift < 0.10 threshold — no re-cluster)")
+    print("  (adaptive threshold τ=1.5/√n — no re-cluster expected for single users)")
 
     all_drifts_join  = []
     all_drifts_leave = []
@@ -155,10 +155,13 @@ def experiment_user_dynamics(clients, k=20):
     total_events     = {"join": 0, "leave": 0}
 
     for client in clients:
-        print(f"\n  ISP {client.client_id} ({client.topo_type}, "
-              f"{client.num_nodes} nodes):")
+        import math
+        tau = 1.5 / math.sqrt(client.num_nodes)
+        topo_label = client.topo_type if client.topo_type not in ("unknown", "", None) else f"partition"
+        print(f"\n  ISP {client.client_id} ({topo_label}, "
+              f"{client.num_nodes} nodes, τ={tau:.4f}):")
 
-        handler = GraphDynamicsHandler(drift_threshold=0.10, epsilon=1.0)
+        handler = GraphDynamicsHandler(epsilon=1.0)
         G = client.graph.copy()
 
         # Simulate 4 single-user sessions on this ISP
@@ -190,31 +193,47 @@ def experiment_user_dynamics(clients, k=20):
     print("  " + "-"*54)
 
     burst_results = []
+    # Track per-burst-size results for summary table
+    burst_summary = {}   # {n_users: {"drifts": [], "taus": [], "reclusters": []}}
+    burst_sizes   = [1, 3, 5, 8, 10]
+    for n in burst_sizes:
+        burst_summary[n] = {"drifts": [], "taus": [], "reclusters": []}
+
     for client in clients[:3]:   # show on 3 ISPs for brevity
-        print(f"\n  ISP {client.client_id} ({client.topo_type}):")
+        topo_label = client.topo_type if client.topo_type not in ("unknown", "", None) else f"partition"
+        print(f"\n  ISP {client.client_id} ({topo_label}):")
         from core.topology_embedding import compute_fingerprint
 
         fp_original = compute_fingerprint(client.graph, k=k)
         G_burst = client.graph.copy()
         joined_nodes = []
-        handler_burst = GraphDynamicsHandler(drift_threshold=0.10, epsilon=1.0)
+        handler_burst = GraphDynamicsHandler(epsilon=1.0)
+        n_original = client.graph.number_of_nodes()  # reference graph size
 
-        for n_users in [1, 3, 5, 8, 10]:
+        for n_users in burst_sizes:
             # Add one more user to reach n_users total
-            current_count = len(joined_nodes)
             while len(joined_nodes) < n_users:
                 router = int(list(G_burst.nodes())[len(joined_nodes) % G_burst.number_of_nodes()])
                 G_burst, new_node = handler_burst.user_joins(G_burst, router_id=router)
                 joined_nodes.append((new_node, router))
 
             fp_current = compute_fingerprint(G_burst, k=k)
-            from core.topology_embedding import fingerprint_drift
-            drift = fingerprint_drift(fp_original, fp_current)
+            from core.topology_embedding import fingerprint_drift, compute_adaptive_threshold
+            # Use adaptive threshold with burst size m=n_users
+            drift = fingerprint_drift(fp_original, fp_current,
+                                      n_nodes=n_original, m_users=n_users)
+            tau = compute_adaptive_threshold(n_original, n_users)
             recluster = drift["should_recluster"]
             burst_results.append(drift["drift_score"])
+
+            # Store for summary
+            burst_summary[n_users]["drifts"].append(drift["drift_score"])
+            burst_summary[n_users]["taus"].append(tau)
+            burst_summary[n_users]["reclusters"].append(recluster)
+
             flag = " <-- RE-CLUSTER TRIGGERED" if recluster else ""
             print(f"    {n_users:2d} users joined | drift={drift['drift_score']:.4f} | "
-                  f"re-cluster={recluster}{flag}")
+                  f"τ={tau:.4f} | re-cluster={recluster}{flag}")
 
         # Now all users leave one by one
         print(f"    Users leaving:")
@@ -227,6 +246,21 @@ def experiment_user_dynamics(clients, k=20):
         print(f"    All {len(joined_nodes)} users left | "
               f"drift from original={drift_after['drift_score']:.6f} | "
               f"Graph restored: {G_leave.number_of_nodes()} == {client.graph.number_of_nodes()} nodes")
+
+    # ── Part B Summary Table ───────────────────────────────────────────────
+    print(f"\n  {'='*64}")
+    print(f"  Part B summary — burst users (averaged over 3 topologies):")
+    print(f"  {'Users (m)':>10} {'Avg τ':>10} {'Avg Drift':>12} {'Re-clusters':>13} {'Triggered?':>11}")
+    print(f"  {'-'*64}")
+    for n_users in burst_sizes:
+        data       = burst_summary[n_users]
+        avg_tau    = np.mean(data["taus"])
+        avg_drift  = np.mean(data["drifts"])
+        n_recl     = sum(data["reclusters"])
+        total_isp  = len(data["reclusters"])
+        triggered  = "YES ✓" if n_recl > 0 else "no"
+        print(f"  {n_users:>10} {avg_tau:>10.4f} {avg_drift:>12.4f} "
+              f"{n_recl:>5}/{total_isp:<7} {triggered:>11}")
 
     # Summary across all ISPs
     print(f"\n  {'='*56}")
@@ -249,35 +283,43 @@ def experiment_user_dynamics(clients, k=20):
              label="User joins",  color="#534AB7")
     ax1.hist(all_drifts_leave, bins=12, alpha=0.65,
              label="User leaves", color="#1D9E75")
-    ax1.axvline(x=0.10, color="#D85A30", linestyle="--", lw=2,
-                label="Re-cluster threshold (0.10)")
     ax1.set_xlabel("Fingerprint drift score")
     ax1.set_ylabel("Number of events")
-    ax1.set_title("Part A: Single user — drift stays below threshold")
+    ax1.set_title("Part A: Single user — drift stays below adaptive τ=1.5/√n")
     ax1.legend()
     ax1.grid(True, alpha=0.3)
 
     # Plot: burst drift vs number of users
     burst_x = [1, 3, 5, 8, 10]
-    ax2.plot(burst_x, burst_results[:len(burst_x)], "-o",
-             color="#534AB7", lw=2, label="ISP 0 (star)")
-    if len(burst_results) >= 2*len(burst_x):
-        ax2.plot(burst_x, burst_results[len(burst_x):2*len(burst_x)], "-s",
-                 color="#1D9E75", lw=2, label="ISP 1 (mesh)")
-    if len(burst_results) >= 3*len(burst_x):
-        ax2.plot(burst_x, burst_results[2*len(burst_x):3*len(burst_x)], "-^",
-                 color="#D85A30", lw=2, label="ISP 2 (ring)")
-    ax2.axhline(y=0.10, color="#D85A30", linestyle="--", lw=2,
-                label="Re-cluster threshold (0.10)")
+    colors  = ["#534AB7", "#1D9E75", "#D85A30"]
+    markers = ["-o", "-s", "-^"]
+    for idx, client in enumerate(clients[:3]):
+        # Use topology type if available, else fall back to "Partition N"
+        topo = getattr(client, "topo_type", None)
+        if topo and topo not in ("unknown", ""):
+            label = f"ISP {client.client_id} ({topo})"
+        else:
+            label = f"Partition {client.client_id}"
+        slice_start = idx * len(burst_x)
+        slice_end   = slice_start + len(burst_x)
+        if len(burst_results) >= slice_end:
+            ax2.plot(burst_x, burst_results[slice_start:slice_end],
+                     markers[idx], color=colors[idx], lw=2, label=label)
+    # Adaptive threshold curve: τ(n,m) = 1.5 / (√n × (1 + ln m))
+    avg_n = np.mean([c.graph.number_of_nodes() for c in clients[:3]])
+    from core.topology_embedding import compute_adaptive_threshold
+    adaptive_taus = [compute_adaptive_threshold(avg_n, m) for m in burst_x]
+    ax2.plot(burst_x, adaptive_taus, "--", color="#D85A30", lw=2,
+             label=f"Adaptive τ(n≈{avg_n:.0f},m)")
     ax2.set_xlabel("Number of users joined simultaneously")
     ax2.set_ylabel("Fingerprint drift score")
-    ax2.set_title("Part B: Burst of users — drift crosses threshold")
+    ax2.set_title("Part B: Burst of users — drift crosses adaptive threshold")
     ax2.legend()
     ax2.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig("results/drift_distribution.png", dpi=150)
-    print(f"\n  Plot saved to results/drift_distribution.png")
+    plt.savefig(f"results/drift_distribution_{prefix}.png", dpi=150)
+    print(f"\n  Plot saved to results/drift_distribution_{prefix}.png")
 
     return {
         "all_drifts_join":   all_drifts_join,
@@ -328,7 +370,7 @@ def main():
 
         print("\n  [GEANT] Experiment 2 — Privacy tradeoff:")
         with contextlib.redirect_stdout(io.StringIO()) as captured:
-            q2_geant = experiment_privacy_tradeoff(geant_clients, k=20)
+            q2_geant = experiment_privacy_tradeoff(geant_clients, k=20, prefix="geant")
         # Print just the table, not the per-trial noise
         lines = captured.getvalue().split("\n")
         for line in lines:
@@ -337,7 +379,7 @@ def main():
                 print(" ", line)
 
         print("\n  [GEANT] Experiment 3 — User join/leave dynamics:")
-        experiment_user_dynamics(geant_clients, k=20)
+        experiment_user_dynamics(geant_clients, k=20, prefix="geant")
 
     except Exception as e:
         print(f"  GEANT experiments failed: {e}")

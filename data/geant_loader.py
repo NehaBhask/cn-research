@@ -299,3 +299,4 @@ if __name__ == "__main__":
     print("\nDone. To use in main.py:")
     print("  from data.geant_loader import create_geant_clients")
     print("  clients = create_geant_clients('data/geant.txt', num_partitions=4)")
+
