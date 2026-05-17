@@ -159,7 +159,9 @@ class GraphDynamicsHandler:
         should_recluster = drift["should_recluster"]
         noisy_fp_for_server = None
         if should_recluster:
-            noisy_fp_for_server = add_dp_noise(fp_new, epsilon=self.epsilon)
+            from core.topology_embedding import compute_sensitivity
+            sensitivity = compute_sensitivity(G_new, k=k)
+            noisy_fp_for_server = add_dp_noise(fp_new, sensitivity=sensitivity,epsilon=self.epsilon)
 
         result = {
             "event_type":            event_type,
