@@ -67,6 +67,23 @@ def compute_fingerprint(G: nx.Graph, k: int = 20,
         return spectrum
     return np.concatenate([spectrum, compute_graph_stats(G)])
 
+def compute_sensitivity(G: nx.Graph, k: int = 20) -> float:
+    """Empirically estimate L2-sensitivity of fingerprint under single-edge change."""
+    fp_base = compute_fingerprint(G, k=k)
+    max_delta = 0.0
+    for u, v in list(G.edges()):
+        G_prime = G.copy()
+        G_prime.remove_edge(u, v)
+        if nx.is_connected(G_prime):
+            fp_prime = compute_fingerprint(G_prime, k=k)
+            max_delta = max(max_delta, float(np.linalg.norm(fp_base - fp_prime)))
+    for u, v in list(nx.non_edges(G)):
+        G_prime = G.copy()
+        G_prime.add_edge(u, v)
+        fp_prime = compute_fingerprint(G_prime, k=k)
+        max_delta = max(max_delta, float(np.linalg.norm(fp_base - fp_prime)))
+    return max_delta if max_delta > 0 else 1.0
+
 
 def add_dp_noise(fingerprint: np.ndarray,
                  sensitivity: float = 1.0,
@@ -108,8 +125,10 @@ def assign_fingerprints(clients: list, k: int = 20,
     noisy_fingerprints = []
     for client in clients:
         raw_fp   = compute_fingerprint(client.graph, k=k)
-        noisy_fp = add_dp_noise(raw_fp, epsilon=epsilon)
+        sensitivity = compute_sensitivity(client.graph, k=k)
+        noisy_fp = add_dp_noise(raw_fp, sensitivity=sensitivity, epsilon=epsilon)
         client.fingerprint = noisy_fp
+        client.sensitivity = sensitivity
         noisy_fingerprints.append(noisy_fp)
         print(f"  ISP {client.client_id} ({client.topo_type:6s}) | "
               f"spectrum[:4]: [{', '.join(f'{v:.3f}' for v in raw_fp[:4])}...] "
