@@ -1,5 +1,4 @@
-# Privacy-Preserving Topology-Aware Federated Learning
-### with Dynamic User Join/Leave Handling
+# Topology-Fingerprinted Federated Learning with Differential Privacy for Heterogeneous ISP Networks
 
 A federated learning framework for ISP networks that clusters participants by **network topology similarity** while preserving privacy via **differential privacy (DP)**. Includes a dynamic membership handler that tracks when end-user devices join or leave routers and decides when re-clustering is warranted.
 
